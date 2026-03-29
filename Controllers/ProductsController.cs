@@ -1,4 +1,6 @@
-﻿using InventoryManagementSystem.Models;
+﻿using AutoMapper;
+using InventoryManagementSystem.DTOs.ProductDTOs;
+using InventoryManagementSystem.Models;
 using InventoryManagementSystem.UnitOfWork;
 using Microsoft.AspNetCore.Mvc;
 namespace InventoryManagementSystem.Controllers
@@ -7,59 +9,62 @@ namespace InventoryManagementSystem.Controllers
     [ApiController]
     public class ProductsController : ControllerBase
     {
+        private readonly IMapper _mapper;
         private readonly IUnitOfWork _unitOfWork;
 
-        public ProductsController(IUnitOfWork unitOfWork)
+        public ProductsController(IUnitOfWork unitOfWork, IMapper mapper)
         {
             _unitOfWork = unitOfWork;
+            _mapper = mapper;
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Product>>> GetProducts()
+        public async Task<ActionResult<IEnumerable<ProductGetDto>>> GetProducts([FromQuery] ProductFilterDto filter)
         {
-            var products  = await _unitOfWork.ProductRepository.GetAllAsync();
-            return Ok(products);
+
+            var listOfProducts = await _unitOfWork.ProductRepository.GetFilteredProducts(filter);
+            var cleanResult = _mapper.Map<IEnumerable<ProductGetDto>>(listOfProducts);
+            return Ok(cleanResult);
         }
 
         [HttpGet("{id}")]
-        public async Task<ActionResult<Product>> GetProductById(int id)
+        public async Task<ActionResult<ProductGetDto>> GetProductById(int id)
         {
             var product = await _unitOfWork.ProductRepository.GetByIdAsyn(id);
             if(product == null)
             {
                 return NotFound("Product not found");
             }
-            return Ok(product);
+            var result = _mapper.Map<ProductGetDto>(product);
+            return Ok(result);
         }
 
         [HttpPost]
-        public async Task<IActionResult> AddProduct([FromBody] Product newProduct)
+        public async Task<IActionResult> AddProduct([FromBody] ProductAddDto newProductDto)
         {
-            await _unitOfWork.ProductRepository.AddAsync(newProduct);
+            var productModel = _mapper.Map<Product>(newProductDto);
+            await _unitOfWork.ProductRepository.AddAsync(productModel);
             await _unitOfWork.SaveChangesAsync();
-            return CreatedAtAction(nameof(AddProduct), new { id = newProduct.Id }, newProduct);
+
+            var result = _mapper.Map<ProductGetDto>(productModel);
+
+            return CreatedAtAction(nameof(AddProduct), new { id = productModel.Id }, result);
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateProduct(int id, [FromBody] Product newProduct)
+        public async Task<IActionResult> UpdateProduct(int id, [FromBody] ProductAddDto updateProductDto)
         {
+
             var existingProduct = await _unitOfWork.ProductRepository.GetByIdAsyn(id);
             if(existingProduct == null)
             {
                 return NotFound("Product not found");
             }
-            existingProduct.Id = newProduct.Id;
-            existingProduct.Name = newProduct.Name;
-            existingProduct.Description = newProduct.Description;
-            existingProduct.Price = newProduct.Price;
-            existingProduct.StockQuantity = newProduct.StockQuantity;
-            existingProduct.CategoryId = newProduct.CategoryId;
-            existingProduct.Category = newProduct.Category;
-            existingProduct.SupplierId = newProduct.SupplierId;
-            existingProduct.Supplier = newProduct.Supplier;
-
+            _mapper.Map(updateProductDto, existingProduct);    
+            
             _unitOfWork.ProductRepository.Update(existingProduct);
             await _unitOfWork.SaveChangesAsync();
+
             return NoContent();
         }
 

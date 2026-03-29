@@ -1,6 +1,8 @@
 ﻿using InventoryManagementSystem.Data;
 using InventoryManagementSystem.Models;
+using InventoryManagementSystem.Repositories.CategoryRepositories;
 using InventoryManagementSystem.Repositories.GenericRepositories;
+using InventoryManagementSystem.Repositories.ProductRepositories;
 
 namespace InventoryManagementSystem.UnitOfWork
 {
@@ -8,8 +10,8 @@ namespace InventoryManagementSystem.UnitOfWork
     {
         private readonly AppDbContext _context;
 
-        private IGenericRepository<Product> _productRepository { get; }
-        private IGenericRepository<Category> _categoryRepository { get; }
+        private IProductRepository _productRepository { get; }
+        private ICategoryRepository _categoryRepository { get; }
         private IGenericRepository<Supplier> _supplierRepository { get; }
 
         public UnitOfWork(AppDbContext context)
@@ -17,11 +19,11 @@ namespace InventoryManagementSystem.UnitOfWork
             _context = context ?? throw new ArgumentNullException(nameof(context));
         }
 
-        public IGenericRepository<Product> ProductRepository
-            => _productRepository ?? new GenericRepository<Product>(_context);
+        public IProductRepository ProductRepository
+            => _productRepository ?? new ProductRepository(_context);
 
-        public IGenericRepository<Category> CategoryRepository
-            => _categoryRepository ?? new GenericRepository<Category>(_context);
+        public ICategoryRepository CategoryRepository
+            => _categoryRepository ?? new CategoryRepository(_context);
 
         public IGenericRepository<Supplier> SupplierRepository
             => _supplierRepository ?? new GenericRepository<Supplier>(_context);

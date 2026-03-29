@@ -1,13 +1,15 @@
 ﻿using InventoryManagementSystem.Models;
+using InventoryManagementSystem.Repositories.CategoryRepositories;
 using InventoryManagementSystem.Repositories.GenericRepositories;
+using InventoryManagementSystem.Repositories.ProductRepositories;
 
 namespace InventoryManagementSystem.UnitOfWork
 {
     public interface IUnitOfWork : IDisposable
     {
-         IGenericRepository<Product> ProductRepository { get; }
-         IGenericRepository<Category> CategoryRepository { get; }
-         IGenericRepository<Supplier> SupplierRepository { get; }
+        IProductRepository ProductRepository { get; }
+        ICategoryRepository CategoryRepository { get; }
+        IGenericRepository<Supplier> SupplierRepository { get; }
 
         Task<int> SaveChangesAsync();
 

@@ -1,7 +1,8 @@
-﻿using InventoryManagementSystem.Models;
+﻿using AutoMapper;
+using InventoryManagementSystem.DTOs.CategoryDTOs;
+using InventoryManagementSystem.Models;
 using InventoryManagementSystem.UnitOfWork;
 using Microsoft.AspNetCore.Mvc;
-
 namespace InventoryManagementSystem.Controllers
 {
     [Route("api/[controller]")]
@@ -9,52 +10,65 @@ namespace InventoryManagementSystem.Controllers
     public class CategoriesController : ControllerBase
     {
         private readonly IUnitOfWork _unitOfWork;
-        public CategoriesController(IUnitOfWork unitOfWork)
+        private readonly IMapper _mapper;
+
+        public CategoriesController(IUnitOfWork unitOfWork, IMapper mapper)
         {
             _unitOfWork = unitOfWork;
+            _mapper = mapper;
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Category>>> GetCategories()
+        public async Task<ActionResult<IEnumerable<CategoryGetDto>>> GetCategories()
         {
-            var categories = await _unitOfWork.CategoryRepository.GetAllAsync();
-            return Ok(categories);
+            var listOfCategories = await _unitOfWork.CategoryRepository.GetAllAsync();
+            var result = _mapper.Map<IEnumerable<CategoryGetDto>>(listOfCategories);
+            return Ok(result);
         }
 
         [HttpGet("{id}")]
-        public async Task<ActionResult<Category>> GetCategoryById(int id)
+        public async Task<ActionResult<CategoryGetDto>> GetCategoryById(int id)
         {
             var category = await _unitOfWork.CategoryRepository.GetByIdAsyn(id);
             if (category == null)
             {
                 return NotFound("Product not found");
             }
-            return Ok(category);
+            var result = _mapper.Map<CategoryGetDto>(category);
+            return Ok(result);
         }
 
         [HttpPost]
-        public async Task<IActionResult> AddCategory([FromBody] Category newCategory)
+        public async Task<IActionResult> AddCategory([FromBody] CategoryAddDto newCategoryDto)
         {
-            await _unitOfWork.CategoryRepository.AddAsync(newCategory);
+            var categoryModel = _mapper.Map<Category>(newCategoryDto);
+            await _unitOfWork.CategoryRepository.AddAsync(categoryModel);
             await _unitOfWork.SaveChangesAsync();
-            return CreatedAtAction(nameof(AddCategory), new { id = newCategory.Id }, newCategory);
+            var result = _mapper.Map<CategoryAddDto>(categoryModel);
+
+            return CreatedAtAction(nameof(AddCategory), new { id = categoryModel.Id }, result);
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateCategory(int id, [FromBody] Category newCategory)
+        public async Task<IActionResult> UpdateCategory(int id, [FromBody] CategoryUpdateDto updateCategoryDto)
         {
+            if (id != updateCategoryDto.Id)
+            {
+                return BadRequest("Category ID in the URL does not match the ID in the request body.");
+            }
+
             var existingCategory = await _unitOfWork.CategoryRepository.GetByIdAsyn(id);
+
             if (existingCategory == null)
             {
-                return NotFound("Product not found");
+                return NotFound("Category not found");
             }
-            existingCategory.Id = newCategory.Id;
-            existingCategory.Name = newCategory.Name;
-            existingCategory.Description = newCategory.Description;
-            existingCategory.Products = newCategory.Products;
+
+            _mapper.Map(updateCategoryDto, existingCategory);
 
             _unitOfWork.CategoryRepository.Update(existingCategory);
             await _unitOfWork.SaveChangesAsync();
+
             return NoContent();
         }
 

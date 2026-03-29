@@ -1,6 +1,8 @@
 ﻿using InventoryManagementSystem.Models;
 using InventoryManagementSystem.UnitOfWork;
+using InventoryManagementSystem.DTOs.SupplierDTOs;
 using Microsoft.AspNetCore.Mvc;
+using AutoMapper;
 namespace InventoryManagementSystem.Controllers
 {
     [Route("api/[controller]")]
@@ -8,54 +10,57 @@ namespace InventoryManagementSystem.Controllers
     public class SuppliersController : ControllerBase
     {
         private readonly IUnitOfWork _unitOfWork;
-
-        public SuppliersController(IUnitOfWork unitOfWork)
+        private readonly IMapper _mapper;
+        public SuppliersController(IUnitOfWork unitOfWork, IMapper mapper)
         {
+            _mapper = mapper;
             _unitOfWork = unitOfWork;
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Supplier>>> GetSuppliers()
+        public async Task<ActionResult<IEnumerable<SupplierGetDto>>> GetSuppliers()
         {
             var suppliers = await _unitOfWork.SupplierRepository.GetAllAsync();
-            return Ok(suppliers);
+            var result = _mapper.Map<IEnumerable<SupplierGetDto>>(suppliers);
+            return Ok(result);
         }
 
         [HttpGet("{id}")]
-        public async Task<ActionResult<Supplier>> GetSupplierById(int id)
+        public async Task<ActionResult<SupplierGetDto>> GetSupplierById(int id)
         {
             var supplier = await _unitOfWork.SupplierRepository.GetByIdAsyn(id);
             if (supplier == null)
             {
                 return NotFound("Product not found");
             }
-            return Ok(supplier);
+            var result = _mapper.Map<SupplierGetDto>(supplier);
+
+            return Ok(result);
         }
 
         [HttpPost]
-        public async Task<IActionResult> AddSupplier([FromBody] Supplier newSupplier)
+        public async Task<IActionResult> AddSupplier([FromBody] SupplierAddDto newSupplierDto)
         {
-            await _unitOfWork.SupplierRepository.AddAsync(newSupplier);
+            var supplierModel = _mapper.Map<Supplier>(newSupplierDto);
+            await _unitOfWork.SupplierRepository.AddAsync(supplierModel);
             await _unitOfWork.SaveChangesAsync();
-            return CreatedAtAction(nameof(AddSupplier), new { id = newSupplier.Id }, newSupplier);
+            var result = _mapper.Map<SupplierAddDto>(supplierModel);
+            return CreatedAtAction(nameof(AddSupplier), new { id = supplierModel.Id }, result);
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateSupplier(int id, [FromBody] Supplier newSupplier)
+        public async Task<IActionResult> UpdateSupplier(int id, [FromBody] SupplierAddDto updateSupplierDto)
         {
             var existingSupplier = await _unitOfWork.SupplierRepository.GetByIdAsyn(id);
             if (existingSupplier == null)
             {
                 return NotFound("Product not found");
             }
-            existingSupplier.Id = newSupplier.Id;
-            existingSupplier.Name = newSupplier.Name;
-            existingSupplier.ContactEmail = newSupplier.ContactEmail;
-            existingSupplier.Phone = newSupplier.Phone;
-            existingSupplier.Products = newSupplier.Products;
-
+            _mapper.Map(updateSupplierDto, existingSupplier);
+            
             _unitOfWork.SupplierRepository.Update(existingSupplier);
             await _unitOfWork.SaveChangesAsync();
+
             return NoContent();
         }
 

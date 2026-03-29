@@ -1,7 +1,11 @@
 
 using InventoryManagementSystem.Data;
+using InventoryManagementSystem.Helpers;
 using InventoryManagementSystem.UnitOfWork;
 using Microsoft.EntityFrameworkCore;
+using FluentValidation;
+using FluentValidation.AspNetCore;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace InventoryManagementSystem
 {
@@ -18,8 +22,9 @@ namespace InventoryManagementSystem
             builder.Services.AddSwaggerGen();
             builder.Services.AddDbContext<AppDbContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
             builder.Services.AddScoped<IUnitOfWork, UnitOfWork.UnitOfWork>();
-            
-            
+            builder.Services.AddAutoMapper(cfg => { }, typeof(Program));
+            builder.Services.AddFluentValidationAutoValidation();
+            builder.Services.AddValidatorsFromAssemblyContaining<Program>();
             var app = builder.Build();
 
             // Configure the HTTP request pipeline.
