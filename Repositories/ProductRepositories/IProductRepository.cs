@@ -5,6 +5,6 @@ namespace InventoryManagementSystem.Repositories.ProductRepositories
 {
     public interface IProductRepository : IGenericRepository<Product>
     {
-        public Task<IEnumerable<Product>> GetFilteredProducts();
+        //public Task<IEnumerable<Product>> GetFilteredProducts();
     }
 }
